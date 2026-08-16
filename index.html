@@ -212,6 +212,16 @@
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
   .note-input { width: 100%; background: var(--surface-2); border: 1.5px solid var(--border); color: var(--text); border-radius: 11px; padding: 12px; font-size: 14.5px; font-family: var(--font-body); }
+
+  .rest-timer-bar { position: fixed; left: 0; right: 0; bottom: 78px; z-index: 40; display: flex; justify-content: center; padding: 0 14px; }
+  .rt-inner { width: 100%; max-width: 512px; background: var(--surface-3); border: 1.5px solid var(--accent-dim); border-radius: 16px; padding: 10px 14px; display: flex; align-items: center; gap: 12px; box-shadow: 0 6px 20px rgba(0,0,0,0.35); }
+  .rest-timer-bar.warn .rt-inner { border-color: var(--amber); }
+  .rest-timer-bar.go .rt-inner { border-color: var(--good); background: linear-gradient(135deg, rgba(99,173,134,0.18), var(--surface-3)); }
+  .rt-label { font-size: 12px; color: var(--text-dim); font-weight: 700; flex: 1; }
+  .rt-time { font-family: var(--font-num); font-size: 22px; font-weight: 800; color: var(--accent); }
+  .rest-timer-bar.warn .rt-time { color: var(--amber); }
+  .rest-timer-bar.go .rt-time { color: var(--good); }
+  .rt-skip { background: none; border: 1px solid var(--border); color: var(--text-dim); font-size: 11.5px; font-weight: 700; padding: 6px 12px; border-radius: 20px; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -295,6 +305,7 @@
       <div id="exerciseList"></div>
       <div class="cooldown-card" id="cooldownCard"></div>
       <div style="text-align:center; color:var(--text-faint); font-size:12px; margin: 4px 0 12px;" id="autosaveNote">✅ Auto-saved. Every tap is stored instantly.</div>
+      <button class="action-btn danger" id="clearSessionBtn" style="margin-bottom:8px;">Clear this session</button>
       <button class="bigbtn finish" id="finishBtn" style="margin-bottom:20px;">Finish Workout</button>
     </section>
 
@@ -437,6 +448,13 @@
 </div>
 
 <div class="toast" id="toast"></div>
+<div class="rest-timer-bar" id="restTimerBar" style="display:none;">
+  <div class="rt-inner">
+    <div class="rt-label" id="restTimerLabel">Rest</div>
+    <div class="rt-time" id="restTimerTime">1:30</div>
+    <button class="rt-skip" id="restTimerSkip">Skip</button>
+  </div>
+</div>
 <div id="modalRoot"></div>
 
 <nav class="bottomnav" id="bottomNav">
@@ -465,39 +483,39 @@ window.addEventListener('error', function(e) {
       A: {
         warmup: "Band Face Pulls (2x15) anchored to Smith machine. Treadmill 9% incline, 5km/h, 3 min. 10 bodyweight squats, 10 arm circles, 8 hip openers, 10 scapular retractions. One light warm-up set on Leg Press.",
         cooldown: "Doorway chest stretch 30s×2, cross-body shoulder stretch 30s/side, standing quad stretch 30s/side, hamstring stretch 30s/side, hip flexor stretch 30s/side, child's pose 30s. FINISH: Smith Machine Dead Hang (3x30s) — stop immediately if you feel any wrist/forearm strain.",
-        ex: [["Leg Press","4×10","6–7"],["Smith Bench / Incline DB Press","3×10","6–7"],["Single-Arm DB Row","3×10/side","6–7"],["Shoulder Press Machine","3×10","6–7"],["DB Lateral Raise","2×12–15","6"],["Push-ups","2×15","6"],["DB Bicep Curl","3×12","6"],["DB Overhead Triceps Extension","3×12","6"],["Plank","3×45s","—"]]
+        ex: [["Leg Press","4×10","6–7",90],["Smith Bench / Incline DB Press","3×10","6–7",90],["Single-Arm DB Row","3×10/side","6–7",90],["Shoulder Press Machine","3×10","6–7",75],["DB Lateral Raise","2×12–15","6",60],["Push-ups","2×15","6",60],["DB Bicep Curl","3×12","6",60],["DB Overhead Triceps Extension","3×12","6",60],["Plank","3×45s","—",45]]
       },
       B: {
         warmup: "Rowing machine 3 min easy. 10 bodyweight RDL hinge rehearsals, 10 leg swings/side, 8 cat-cow, 2×15 bodyweight glute bridges.",
         cooldown: "Same sequence as Day A. FINISH: Smith Machine Dead Hang (3x30s).",
-        ex: [["Dumbbell RDL","4×10","6–7"],["Leg Press","4×10","6–7"],["Chest Press Machine","3×10","6–7"],["Seated Leg Curl","3×10–12","6–7"],["Incline DB Row","3×10–12","6–7"],["Standing Calf Raise (DB-loaded, off plate edge)","3×12–15","6–7"],["Side-Lying Leg Lifts","2×15/side","6"]]
+        ex: [["Dumbbell RDL","4×10","6–7",90],["Leg Press","4×10","6–7",90],["Chest Press Machine","3×10","6–7",75],["Seated Leg Curl","3×10–12","6–7",60],["Incline DB Row","3×10–12","6–7",90],["Standing Calf Raise (DB-loaded, off plate edge)","3×12–15","6–7",60],["Side-Lying Leg Lifts","2×15/side","6",45]]
       },
       C: {
         warmup: "Upright bike 3 min easy-moderate. 10 bodyweight squats, 10 arm circles, 8 hip openers, 10 scapular wall slides.",
         cooldown: "Same sequence as Day A. FINISH: Smith Machine Dead Hang (3x30s).",
-        ex: [["Leg Press","4×10","6–7"],["Incline DB Press","3×10","6–7"],["Single-Arm DB Row","3×10/side","6–7"],["Roman Chair Back Ext","3×12–15","6"],["DB Rear Delt Raise","3×12–15","6"],["DB Fly","2×12–15","6–7"],["Seated Leg Curl","2×10–12","6–7"],["Plank","3×45–60s","—"],["Farmer Carry (light, grip-comfortable only)","2 rounds (40m)","—"]]
+        ex: [["Leg Press","4×10","6–7",90],["Incline DB Press","3×10","6–7",90],["Single-Arm DB Row","3×10/side","6–7",90],["Roman Chair Back Ext","3×12–15","6",60],["DB Rear Delt Raise","3×12–15","6",60],["DB Fly","2×12–15","6–7",60],["Seated Leg Curl","2×10–12","6–7",60],["Plank","3×45–60s","—",45],["Farmer Carry (light, grip-comfortable only)","2 rounds (40m)","—",60]]
       }
     },
     standard: {
       A: {
         warmup: "Band Face Pulls (2x15) anchored to Smith machine. Same warm-up as Foundation A.",
         cooldown: "Same cooldown as Foundation A. After lifting: 5 min down-regulation breathing (inhale 4s, hold 7s, exhale 8s). FINISH: Dead Hang (3x30s, stop if any wrist/forearm strain).",
-        ex: [["Leg Press","3×8–12","6–7"],["Smith Bench / Incline DB Press","3×8–12","6–7"],["Single-Arm DB Row","3×10–12/side","6–7"],["Shoulder Press Machine","3×8–12","6–7"],["DB Lateral Raise","2×12–15","6"],["DB Bicep Curl","3×12","6"],["DB Overhead Triceps Extension","3×12","6"],["Plank","3×45s","—"]]
+        ex: [["Leg Press","3×8–12","6–7",90],["Smith Bench / Incline DB Press","3×8–12","6–7",90],["Single-Arm DB Row","3×10–12/side","6–7",90],["Shoulder Press Machine","3×8–12","6–7",75],["DB Lateral Raise","2×12–15","6",60],["DB Bicep Curl","3×12","6",60],["DB Overhead Triceps Extension","3×12","6",60],["Plank","3×45s","—",45]]
       },
       B: {
         warmup: "Same warm-up as Foundation B.",
         cooldown: "Same cooldown. After lifting: 5 min down-regulation breathing. FINISH: Dead Hang (3x30s).",
-        ex: [["Dumbbell RDL","3×8–12","6–7"],["Leg Press","3×8–12","6–7"],["Chest Press Machine","3×8–12","6–7"],["Seated Leg Curl","2×10–12","6–7"],["Incline DB Row","3×10–12","6–7"],["Standing Calf Raise (DB-loaded, off plate edge)","3×12–15","6–7"],["Side-Lying Leg Lifts","2×15/side","6"]]
+        ex: [["Dumbbell RDL","3×8–12","6–7",90],["Leg Press","3×8–12","6–7",90],["Chest Press Machine","3×8–12","6–7",75],["Seated Leg Curl","2×10–12","6–7",60],["Incline DB Row","3×10–12","6–7",90],["Standing Calf Raise (DB-loaded, off plate edge)","3×12–15","6–7",60],["Side-Lying Leg Lifts","2×15/side","6",45]]
       },
       C: {
         warmup: "Same warm-up as Foundation C.",
         cooldown: "Same cooldown. After lifting: 5 min down-regulation breathing. FINISH: Dead Hang (3x30s).",
-        ex: [["Leg Press","3×8–12","6–7"],["Incline DB Press","3×8–12","6–7"],["Single-Arm DB Row","3×10–12/side","6–7"],["Roman Chair Back Ext","3×12–15","6"],["DB Rear Delt Raise","3×12–15","6"],["DB Fly","2×12–15","6–7"],["Seated Leg Curl","2×10–12","6–7"],["Plank","3×45s","—"],["Farmer Carry (light, grip-comfortable only)","2 rounds (40m)","—"]]
+        ex: [["Leg Press","3×8–12","6–7",90],["Incline DB Press","3×8–12","6–7",90],["Single-Arm DB Row","3×10–12/side","6–7",90],["Roman Chair Back Ext","3×12–15","6",60],["DB Rear Delt Raise","3×12–15","6",60],["DB Fly","2×12–15","6–7",60],["Seated Leg Curl","2×10–12","6–7",60],["Plank","3×45s","—",45],["Farmer Carry (light, grip-comfortable only)","2 rounds (40m)","—",60]]
       },
       D: {
         warmup: "Easy 5 min cardio of your choice to raise core temperature.",
         cooldown: "Full stretch sequence, unhurried — this day is recovery-positive, not a fourth hard session.",
-        ex: [["Steady Cardio (treadmill/bike/row)","1×15–20 min","5–6"],["Hip Flexor + Thoracic Mobility Flow","2 rounds","—"],["Band or Bodyweight Scapular Work","2×15","5"]],
+        ex: [["Steady Cardio (treadmill/bike/row)","1×15–20 min","5–6",0],["Hip Flexor + Thoracic Mobility Flow","2 rounds","—",30],["Band or Bodyweight Scapular Work","2×15","5",30]],
         note: "Placeholder template — swap for your exact original Part 5.3 prescription once you paste it in."
       }
     },
@@ -505,17 +523,17 @@ window.addEventListener('error', function(e) {
       A: {
         warmup: "Abbreviated: 2 min easy cardio, no full warm-up sequence needed. Band pull-aparts x15.",
         cooldown: "Quick stretch — 2 min minimum, don't skip entirely. 1 set Dead Hang.",
-        ex: [["Leg Press","3×10","6–7"],["Smith Bench (forearm-capped)","3×10","6–7"],["Plank","3×30s","—"]]
+        ex: [["Leg Press","3×10","6–7",90],["Smith Bench (forearm-capped)","3×10","6–7",75],["Plank","3×30s","—",45]]
       },
       B: {
         warmup: "Abbreviated: 2 min easy cardio.",
         cooldown: "Quick stretch — 2 min minimum.",
-        ex: [["DB RDL","3×10","6–7"],["Leg Press","3×10","6–7"],["Plank","3×30s","—"]]
+        ex: [["DB RDL","3×10","6–7",75],["Leg Press","3×10","6–7",90],["Plank","3×30s","—",45]]
       },
       C: {
         warmup: "Abbreviated: 2 min easy cardio.",
         cooldown: "Quick stretch — 2 min minimum.",
-        ex: [["Leg Press","3×10","6–7"],["Incline DB Row","3×10","6–7"],["Plank","3×30s","—"]]
+        ex: [["Leg Press","3×10","6–7",90],["Incline DB Row","3×10","6–7",90],["Plank","3×30s","—",45]]
       }
     }
   };
@@ -538,11 +556,28 @@ window.addEventListener('error', function(e) {
     } catch(e) {}
     return { programStart: null, settings: { chime: false }, sessions: {}, checkins: {}, drinks: {} };
   }
-  function saveData(d) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); return true; } catch(e) { return false; } }
+  function saveData(d) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); return true; }
+    catch(e) { window.__lastSaveError = e.message; return false; }
+  }
 
   let data = loadData();
   if (!data.settings) data.settings = { chime: false };
   if (!data.drinks) data.drinks = {};
+
+  let storageBlocked = false;
+  try {
+    localStorage.setItem("__tos_test__", "1");
+    localStorage.removeItem("__tos_test__");
+  } catch (e) {
+    storageBlocked = true;
+  }
+  if (storageBlocked) {
+    const banner = document.createElement("div");
+    banner.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:99998;background:#3a2320;color:#f4f5f7;padding:14px 16px;font-family:-apple-system,sans-serif;font-size:13px;line-height:1.5;border-bottom:2px solid #d17568;";
+    banner.innerHTML = "<b>Nothing will save on this device right now.</b><br>Go to iPhone Settings → Safari → turn OFF \"Block All Cookies\", then reopen this app. (If you're on Mac Safari, check Safari → Settings → Privacy → uncheck \"Block all cookies\".)";
+    document.body.appendChild(banner);
+  }
 
   function showToast(msg) {
     const t = document.getElementById("toast");
@@ -816,7 +851,7 @@ window.addEventListener('error', function(e) {
     const RPE_LABELS = ["easy","perfect","hard"];
     const RPE_DISPLAY = { easy:"Easy", perfect:"Perfect", hard:"Hard" };
 
-    function exCard(name, target, rpeTarget, key) {
+    function exCard(name, target, rpeTarget, key, restSeconds) {
       const d = state.exData[name];
       const setCount = parseSetCount(target);
       const isPlank = /plank/i.test(name);
@@ -877,8 +912,10 @@ window.addEventListener('error', function(e) {
       card.querySelectorAll(".rpe-chip").forEach(chip => chip.addEventListener("click", (e) => {
         e.stopPropagation();
         const label = chip.dataset.label;
+        const wasOff = d.rpeLabel !== label;
         d.rpeLabel = (d.rpeLabel === label) ? null : label;
         renderExercises(); markUnsavedAndSave();
+        if (wasOff && restSeconds > 0) startRestTimer(restSeconds, name);
       }));
 
       return card;
@@ -891,16 +928,93 @@ window.addEventListener('error', function(e) {
       document.getElementById("cooldownCard").innerHTML = "<b>Cool-down</b>" + preset.cooldown;
       const list = document.getElementById("exerciseList");
       list.innerHTML = "";
-      preset.ex.forEach(([name,target,rpe]) => list.appendChild(exCard(name,target,rpe,key)));
+      preset.ex.forEach(([name,target,rpe,rest]) => list.appendChild(exCard(name,target,rpe,key,rest)));
     }
+
+    // ---------- Rest timer: warns at 30s remaining, beeps again at 0 ----------
+    let restTimerHandle = null;
+    let restTimerWarned = false;
+    function beep(freq, durMs) {
+      try {
+        const ctx = new (window.AudioContext||window.webkitAudioContext)();
+        const o = ctx.createOscillator(); const g = ctx.createGain();
+        o.type = "sine"; o.frequency.setValueAtTime(freq, ctx.currentTime);
+        g.gain.setValueAtTime(0.001, ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.25, ctx.currentTime+0.02);
+        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+durMs/1000);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(); o.stop(ctx.currentTime+durMs/1000+0.02);
+      } catch(e) {}
+    }
+    function warningBeep() { beep(880, 220); }
+    function goBeep() { beep(660, 150); setTimeout(() => beep(990, 220), 180); }
+
+    function fmtMMSS(totalSec) {
+      const m = Math.floor(totalSec/60), s = totalSec%60;
+      return m + ":" + String(s).padStart(2,"0");
+    }
+
+    function startRestTimer(totalSeconds, exerciseName) {
+      if (restTimerHandle) clearInterval(restTimerHandle);
+      restTimerWarned = false;
+      const bar = document.getElementById("restTimerBar");
+      const label = document.getElementById("restTimerLabel");
+      const timeEl = document.getElementById("restTimerTime");
+      const endAt = Date.now() + totalSeconds*1000;
+      const warnAt = Math.max(0, totalSeconds - 30);
+      bar.style.display = "flex";
+      bar.className = "rest-timer-bar";
+      label.textContent = "Rest — " + exerciseName;
+      timeEl.textContent = fmtMMSS(totalSeconds);
+
+      function tick() {
+        const remaining = Math.round((endAt - Date.now())/1000);
+        if (remaining <= 0) {
+          timeEl.textContent = "GO";
+          bar.className = "rest-timer-bar go";
+          if (restTimerHandle) { clearInterval(restTimerHandle); restTimerHandle = null; }
+          goBeep();
+          setTimeout(() => { bar.style.display = "none"; }, 2500);
+          return;
+        }
+        if (!restTimerWarned && remaining <= 30) {
+          restTimerWarned = true;
+          bar.className = "rest-timer-bar warn";
+          warningBeep();
+        }
+        timeEl.textContent = fmtMMSS(remaining);
+      }
+      tick();
+      restTimerHandle = setInterval(tick, 500);
+    }
+    document.getElementById("restTimerSkip").addEventListener("click", () => {
+      if (restTimerHandle) { clearInterval(restTimerHandle); restTimerHandle = null; }
+      document.getElementById("restTimerBar").style.display = "none";
+    });
 
     function markUnsavedAndSave() {
       const key = state.date + "|" + state.day;
       data.sessions[key] = { date: state.date, day: state.day, track: state.track, exercises: state.exData, savedAt: new Date().toISOString(), completed: data.sessions[key] ? data.sessions[key].completed : false };
-      saveData(data);
+      const ok = saveData(data);
+      if (!ok) showToast("Save failed: " + (window.__lastSaveError || "unknown error") + " — check Settings > Safari > Block All Cookies");
       document.getElementById("streakBadge").textContent = currentStreak() + "🔥";
       renderAdherence();
     }
+
+    document.getElementById("clearSessionBtn").addEventListener("click", () => {
+      const modalRoot = document.getElementById("modalRoot");
+      modalRoot.innerHTML = `<div class="modal-overlay"><div class="modal"><h2>Clear this session?</h2><div class="sub">Resets all sets, weights, and RPE for Day ${state.day} today back to blank.</div><button class="modal-close" id="confirmClearSession" style="background:var(--bad); color:#2a0f0a;">Clear It</button><button class="link-btn" id="cancelClearSession" style="margin-top:10px;">Cancel</button></div></div>`;
+      document.getElementById("confirmClearSession").addEventListener("click", () => {
+        const key = state.date + "|" + state.day;
+        delete data.sessions[key];
+        saveData(data);
+        initExData(null);
+        renderExercises();
+        modalRoot.innerHTML = "";
+        showToast("Session cleared");
+      });
+      document.getElementById("cancelClearSession").addEventListener("click", () => { modalRoot.innerHTML = ""; });
+    });
 
     function loadExistingSession() {
       const key = state.date + "|" + state.day;
@@ -916,7 +1030,7 @@ window.addEventListener('error', function(e) {
       const loggedEx = Object.values(state.exData).filter(e => e.setsDone > 0).length;
       data.sessions[key] = { date: state.date, day: state.day, track: state.track, exercises: state.exData, savedAt: new Date().toISOString(), completed: true };
       const ok = saveData(data);
-      if (!ok) { showToast("Save failed — try again"); return; }
+      if (!ok) { showToast("Save failed: " + (window.__lastSaveError || "unknown error")); return; }
       document.getElementById("streakBadge").textContent = currentStreak() + "🔥";
       showSessionSummary(loggedEx, totalEx);
     });
@@ -1051,7 +1165,7 @@ window.addEventListener('error', function(e) {
     document.getElementById("ciSaveBtn").addEventListener("click", () => {
       data.checkins[state.date] = Object.assign({ date: state.date }, ciState);
       const ok = saveData(data);
-      showToast(ok ? "Check-in saved" : "Save failed");
+      showToast(ok ? "Check-in saved" : "Save failed: " + (window.__lastSaveError || "unknown error"));
       goToView("today");
     });
 
